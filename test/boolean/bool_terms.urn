@@ -1,0 +1,13 @@
+{
+    { { True or True } and { False or False } }
+}
+{
+    False
+}
+
+{ 
+    { { True or False } or { False and { True or True } } }
+}
+{
+    True
+}
