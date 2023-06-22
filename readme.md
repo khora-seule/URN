@@ -1,8 +1,7 @@
-##Specification for this
-#**U***nidimensional* **R***ewriting* **N***otation*
+URN stands for Unidimensional Rewriting Notation
 
 - Big Idea
-> URN is a notation system designed to let you specify a simple ARS so that it can then be automatically maximally rewritten.
+> URN is a notation system designed to let you specify a simple Abstract Rewriting System ( ARS ) so that it can then be automatically step-wise rewritten.
 
 - Terms & Rules
 > - There are two constructs in URN: `Terms` and `Rules`. 
@@ -12,7 +11,7 @@
 - Rewriting Using Rules
 > - Rewriting `Terms` using `Rules` follows an implicit precedence in order to ensure that rewriting is always deterministic ( though no other guarantees are provided ). 
 - Rewriting occurs as follows:
-> 1. All `terms` which appear on the `LHS` of the nth `Rule` are rewritten.
+> 1. All `terms` which appear as the `Pre-Term` of the nth `Rule` are rewritten into the `Post-Term`.
 > 2. If there are none, then the first step is repeated with the next `Rule`.
 > 3. As soon as any `terms` are rewritten, start over from the first step with `n = 1`.
 > 4. If all `Rules` fail to result in a rewrite then the ARS has terminated.
