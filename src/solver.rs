@@ -2,7 +2,7 @@ use crate::parser::Term;
 use std::collections::HashSet;
 use indexmap::IndexSet;
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
 enum TermIR {
     Name(usize),
     Term(usize),
@@ -12,19 +12,25 @@ enum TermIR {
 struct TermSet(IndexSet<Box<[TermIR]>>);
 
 impl TermSet {
-    fn insert( &mut self, names: &Box<[&str]>, parsed_term: &[Term] ) -> usize {
+    fn insert_raw( &mut self, names: &Box<[&str]>, parsed_term: &[Term] ) -> usize {
 
         let mut new_term = Vec::new();
 
         for sub_term in parsed_term.into_iter() {
             match sub_term {
                 Term::Name(name) => new_term.push(TermIR::Name(names.iter().position(|x| x == name).unwrap() )),
-                Term::Sentence(ptr) => new_term.push(TermIR::Term(self.insert( names, &*ptr ))),
+                Term::Sentence(ptr) => new_term.push(TermIR::Term(self.insert_raw( names, &*ptr ))),
                 Term::Bound => todo!(),
             }
         }
-        let (index,_) = self.0.insert_full(new_term.into_boxed_slice());
+        self.insert(new_term.into_boxed_slice())
+    }
+    fn insert( &mut self, term: Box<[TermIR]> ) -> usize {
+        let (index,_) = self.0.insert_full(term);
         index
+    }
+    fn get_index( &mut self, index: usize ) -> &Box<[TermIR]> {
+        self.0.get_index( index ).unwrap()
     }
 }
 
@@ -49,13 +55,13 @@ impl TermTable<'_> {
             match &rule_pair[0] {
                 Term::Sentence(ptr) => {
 
-                    pre_index = terms.insert(&names, &*ptr);
+                    pre_index = terms.insert_raw(&names, &*ptr);
                 }
                 _ => todo!(),
             }
             match &rule_pair[1] {
                 Term::Sentence(ptr) => {
-                    post_index = terms.insert(&names, &*ptr);
+                    post_index = terms.insert_raw(&names, &*ptr);
                 }
                 _ => todo!(),
             }
@@ -66,7 +72,7 @@ impl TermTable<'_> {
             let index;
             match term {
                 Term::Sentence(ptr) => {
-                    index = terms.insert(&names, &*ptr);
+                    index = terms.insert_raw(&names, &*ptr);
                 }
                 _ => todo!(),
             }
@@ -81,27 +87,79 @@ impl TermTable<'_> {
             rule_indices: rule_indices.into_iter().collect::<Vec<_>>().into_boxed_slice(),
         }
     }
-    // Returns a bool indicating whether or not a rewrite occured for all steps
-    // True if so, false if no rewrite target was found in some step
-    /*
-    fn rewrite( &mut self,  steps: usize ) -> bool {
-        let total = true;
-        'pass: for step in 0..steps {
-            for (pre_index,post_index) in self.rules_indices.into_iter() {
-                let target = self.term_indices.into_iter().find( |x| x == pre_index );
-                match target {
-                    Some(_) => {
 
+    // Returns a bool, usize pair indicating whether or not a rewrite occured for all steps
+    // True if so, false if no rewrite target was found and at which step
+    pub fn rewrite( &mut self,  steps: usize ) -> ( bool, usize ) {
+        let mut new_top_term_index: usize;
+        let external = false;
+        let internal = false;
+
+        'pass: for step in 0..steps {
+            for (pre_index,post_index) in self.rule_indices.into_iter() {
+                let mut top_level = false;
+                // First see if any top level terms match the Rule
+                let target = self.term_indices.take( pre_index );
+
+                match target {
+
+                    // If they do insert the index for the post-term of the rule into term-indices
+                    Some(_) => {
+                        new_top_term_index = *post_index;
+                        let external = true;
+                        top_level = true;
                     }
                     None => {
-                        let total = false;
-                        break 'pass
-                    }
+                        new_top_term_index = 0;
+                    },
+                }
+
+                // Then check if any of the current terms have subterms that match the rule
+                for index in self.term_indices.clone().iter() {
                     
+                    let term = self.terms.get_index(*index);
+                    let mut rewrites = HashSet::new();
+
+                    for sub_index in 0..term.len() {
+                        match term[sub_index] {
+                            TermIR::Term(num) => {
+                                if num == *pre_index {
+                                    rewrites.insert(sub_index);
+                                }
+                            }
+                            _ => ()
+                        }
+                    }
+
+                    if !rewrites.is_empty() {
+                        let internal = true;
+
+                        let mut new_term = term.clone();
+
+                        for sub_index in rewrites {
+                            let elem = new_term.get_mut(sub_index).unwrap();
+                            *elem = TermIR::Term(*post_index);
+                        }
+                        let new_index = self.terms.insert(new_term.to_vec().into_boxed_slice());
+                        self.term_indices.insert(new_index);
+                    }
+                }
+
+                if top_level {
+                    self.term_indices.insert(new_top_term_index);
                 }
             }
+
+            if !( external | internal ) {
+                return (false, step)
+            }
+
         }
-        total
+        ( true, steps )
     }
-    */
+
+    //fn translate( &self ) -> 
+
+    //pub fn display
+
 }

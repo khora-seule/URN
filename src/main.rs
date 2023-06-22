@@ -18,8 +18,13 @@ fn main() {
 
     let (parsed_terms,parsed_rules,names) = parse_files(&terms_file,&rules_file);
 
-    let term_table = TermTable::build_term_table(parsed_terms,parsed_rules,names);
+    let mut term_table = TermTable::build_term_table(parsed_terms,parsed_rules,names);
 
 
     println!("{:?}", term_table);
+    term_table.rewrite(1);
+    println!("{:?}", term_table);
+    term_table.rewrite(1);
+    println!("{:?}", term_table);
+
 }

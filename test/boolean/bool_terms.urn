@@ -1,12 +1,12 @@
 {
-    { { True or True } and { False or False } }
+    { True or True } and { False or False }
 }
 {
     False
 }
 
 { 
-    { { True or False } or { False and { True or True } } }
+    { True or False } or { False and { True or True } }
 }
 {
     True
