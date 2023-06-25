@@ -1,4 +1,4 @@
-
+use std::collections::HashSet;
 use std::env;
 use std::fs::read_to_string;
 mod parser;
@@ -12,7 +12,6 @@ fn main() {
 
     let terms_path = &args[1];
     let rules_path = &args[2];
-
     let terms_file = read_to_string( terms_path ).unwrap();
     let rules_file = read_to_string( rules_path ).unwrap();
 
@@ -20,11 +19,65 @@ fn main() {
 
     let mut term_table = TermTable::build_term_table(parsed_terms,parsed_rules,names);
 
+    let flags = &args[2..].iter().collect::<HashSet<_>>();
 
-    println!("{:?}", term_table);
-    term_table.rewrite(1);
-    println!("{:?}", term_table);
-    term_table.rewrite(1);
-    println!("{:?}", term_table);
+    let verbose = flags.contains(&String::from("-v"));
+
+    let spacious = flags.contains(&String::from("-s"));
+
+    let raw = flags.contains(&String::from("-r"));
+
+    if raw {
+        for term in term_table.display().iter() {
+            println!("{}",term);
+        }
+        while term_table.rewrite() {
+            for term in term_table.display().iter() {
+                println!("{}",term);
+            }
+        }
+    }
+    else {
+
+        if verbose {
+            println!("Initial Term(s):");
+        }
+
+        let display = term_table.display();
+
+        if display.len() == 1 {
+            println!("{}", display.iter().next().unwrap());
+        }
+        else {
+            for (index, term) in display.iter().enumerate() {
+                println!("|{}|\t{}",index+1,term);
+            }
+        }
+        
+        if spacious {
+            println!("{0}{1}{0}\n{0}{1}{0}\t{1}\t{1}\t{1}\t{1}\t{1}\t{1}\t{1}\n{0}{1}{0}", "|","~");
+        }
+
+        let mut steps = 1;
+
+        while term_table.rewrite() {
+            let display = term_table.display();
+            if verbose {
+                println!("Number of Rewrites: {}\nCurrent Term(s):", steps);
+                steps += 1;
+            }
+            if display.len() == 1 {
+                println!("{}", display.iter().next().unwrap());
+            }
+            else {
+                for (index, term) in display.iter().enumerate() {
+                    println!("|{}|\t{}",index+1,term);
+                }
+            }
+            if spacious {
+                println!("{0}{1}{0}\n{0}{1}{0}\t{1}\t{1}\t{1}\t{1}\t{1}\t{1}\t{1}\n{0}{1}{0}", "|","~");
+            }    
+        }
+    }
 
 }

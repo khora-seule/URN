@@ -1,0 +1,9 @@
+{
+    {
+        { True or True } and { False or False }
+    }
+    xor
+    {
+        { True and True } or { not { False and False } }
+    }
+}
