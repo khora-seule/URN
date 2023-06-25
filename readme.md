@@ -15,19 +15,19 @@ To start learning URN head over to [examples](./examples) and try running some o
 ### With Nix
 1. Clone this Repo
 ```
-$ git clone git@github.com:khora-seule/urn.git
+git clone git@github.com:khora-seule/urn.git
 ```
 2. Setup Development Enviroment
 ```
-$ nix develop
+nix develop
 ```
 3. Build URN
 ```
-$ cargo build
+cargo build
 ```
 4. Run URN
 ```
-$ ./target/debug/urn ~/.../terms.urn ~/.../rules.urn
+./target/debug/urn ~/.../terms.urn ~/.../rules.urn
 ```
 
 ---
@@ -35,15 +35,15 @@ $ ./target/debug/urn ~/.../terms.urn ~/.../rules.urn
 ### With Rust
 1. Clone this Repo
 ```
-$ git clone git@github.com:khora-seule/urn.git
+git clone git@github.com:khora-seule/urn.git
 ```
 2. Build URN
 ```
-$ cargo build
+cargo build
 ```
 3. Run URN
 ```
-$ ./target/debug/urn ~/.../terms.urn ~/.../rules.urn
+./target/debug/urn ~/.../terms.urn ~/.../rules.urn
 ```
 
 ---
