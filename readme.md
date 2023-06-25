@@ -8,29 +8,43 @@ URN is a notation system designed to let you specify a simple Abstract Rewriting
 If you want to get started you'll need one of two things! [Nix ( w/ flakes! )](https://nixos.org/) or [Rust](https://www.rust-lang.org/) ( unless you are willing to re-implement URN according to the specification which... be my guest! )
 Follow the instructions below depending on the option you choose.
 
-To start learning URN head over to [examples](./examples) and trying running some of them.
+To start learning URN head over to [examples](./examples) and try running some of them.
 
 ---
 
 ### With Nix
 1. Clone this Repo
-> $ git clone git@github.com:khora-seule/urn.git
+```
+$ git clone git@github.com:khora-seule/urn.git
+```
 2. Setup Development Enviroment
-> $ nix develop
+```
+$ nix develop
+```
 3. Build URN
-> $ cargo build
+```
+$ cargo build
+```
 4. Run URN
-> $ ./target/debug/urn ~/.../terms.urn ~/.../rules.urn
+```
+$ ./target/debug/urn ~/.../terms.urn ~/.../rules.urn
+```
 
 ---
 
 ### With Rust
 1. Clone this Repo
-> $ git clone git@github.com:khora-seule/urn.git
+```
+$ git clone git@github.com:khora-seule/urn.git
+```
 2. Build URN
-> $ cargo build
+```
+$ cargo build
+```
 3. Run URN
-> $ ./target/debug/urn ~/.../terms.urn ~/.../rules.urn
+```
+$ ./target/debug/urn ~/.../terms.urn ~/.../rules.urn
+```
 
 ---
 
