@@ -5,7 +5,7 @@ URN is a notation system designed to let you specify a simple Abstract Rewriting
 
 
 ## Getting Started
-If you want to get started you'll need one of two things! [Nix ( w/ flakes! )](https://nixos.org/) or [Rust](https://www.rust-lang.org/) ( unless you are willing to re-implement URN according to the specification which... be my guest! )
+If you want to get started you'll need one of two things! [Nix ( w/ flakes! )](https://nixos.org/) or [Rust](https://www.rust-lang.org/)
 Follow the instructions below depending on the option you choose.
 
 To start learning URN head over to [examples](./examples) and try running some of them.

@@ -46,7 +46,7 @@ fn main() {
         let display = term_table.display();
 
         if display.len() == 1 {
-            println!("{}", display.iter().next().unwrap());
+            println!("|~|{}", display.iter().next().unwrap());
         }
         else {
             for (index, term) in display.iter().enumerate() {
@@ -55,7 +55,7 @@ fn main() {
         }
         
         if spacious {
-            println!("{0}{1}{0}\n{0}{1}{0}\t{1}\t{1}\t{1}\t{1}\t{1}\t{1}\t{1}\n{0}{1}{0}", "|","~");
+            println!("|~|");
         }
 
         let mut steps = 1;
@@ -63,19 +63,19 @@ fn main() {
         while term_table.rewrite() {
             let display = term_table.display();
             if verbose {
-                println!("Number of Rewrites: {}\nCurrent Term(s):", steps);
+                println!("|~| Number of Rewrites: {}\n|~|\n|~| Current Term(s)", steps);
                 steps += 1;
             }
             if display.len() == 1 {
-                println!("{}", display.iter().next().unwrap());
+                println!("|~| {}", display.iter().next().unwrap());
             }
             else {
                 for (index, term) in display.iter().enumerate() {
-                    println!("|{}|\t{}",index+1,term);
+                    println!("|{}\t{}",index+1,term);
                 }
             }
             if spacious {
-                println!("{0}{1}{0}\n{0}{1}{0}\t{1}\t{1}\t{1}\t{1}\t{1}\t{1}\t{1}\n{0}{1}{0}", "|","~");
+                println!("|~|");
             }    
         }
     }

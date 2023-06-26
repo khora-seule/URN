@@ -54,22 +54,6 @@ impl fmt::Display for OutputTree<'_> {
     }
 }
 
-/*
-impl fmt::Display for OutputTree<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\x7B\n")
-        match self {
-            OutputTree::Leaf(name) => write!(f, name),
-            OutputTree::Tree(tree) => {
-                for sub_tree in tree.iter() {
-                    write!(f, )
-                }
-            }
-        }
-        write!(f, "\7D\n")
-    }
-}
-*/
 #[derive(Debug)]
 struct TermSet(IndexSet<Box<[TermIR]>>);
 
@@ -92,17 +76,17 @@ impl TermSet {
         let (index,_) = self.0.insert_full(term);
         index
     }
-    fn get_index( &self, index: usize ) -> &Box<[TermIR]> {
-        self.0.get_index( index ).unwrap()
+    fn get_index( &self, index: &usize ) -> &Box<[TermIR]> {
+        self.0.get_index( *index ).unwrap()
     }
-    fn deep_get_index( &self, index: usize ) -> TreeIR {
+    fn deep_get_index( &self, index: &usize ) -> TreeIR {
 
         let mut term = Vec::new();
 
         for sub_term in self.get_index( index ).clone().into_iter() {
             match sub_term {
                 TermIR::Name(name_index) => term.push(TreeIR::Leaf(*name_index)),
-                TermIR::Term(sub_index) => term.push(self.deep_get_index(*sub_index)),
+                TermIR::Term(sub_index) => term.push(self.deep_get_index(sub_index)),
             }
         }
         TreeIR::Tree(term)
@@ -186,11 +170,11 @@ impl TermTable<'_> {
         index
     }
 
-    fn top_contains( &self, index: usize ) -> bool {
+    fn top_contains( &self, index: &usize ) -> bool {
         self.term_indices.contains( &index )
     }
 
-    fn sub_contains ( &self, index: usize, term: TermIR ) -> bool {
+    fn sub_contains ( &self, index: &usize, term: &TermIR ) -> bool {
 
         let mut visitable = HashSet::from([index]);
         let mut visited = HashSet::new();
@@ -202,16 +186,16 @@ impl TermTable<'_> {
             for term_index in itinerary {
                 visited.insert(term_index);
 
-                for sub_term in self.terms.get_index(term_index).iter() {
+                for sub_term in self.terms.get_index(&term_index).iter() {
                     match sub_term {
                         TermIR::Term(sub_index) => {
-                            if *sub_term == term {
+                            if sub_term == term {
                                 return true
                             }
-                            visitable.insert(*sub_index);
+                            visitable.insert(sub_index);
                         }
                         TermIR::Name(_) => {
-                            if *sub_term == term {
+                            if sub_term == term {
                                 return true
                             }
                         }
@@ -223,13 +207,13 @@ impl TermTable<'_> {
         // Should also cause the function to short-circuit early
         false
     }
-    fn internal_contains( &self, index: usize ) -> bool {
+    fn internal_contains( &self, index: &usize ) -> bool {
         self.term_indices.clone()
-            .into_iter()
-            .any( |x| self.sub_contains( x, TermIR::Term(index) ) )
+            .iter()
+            .any( |x| self.sub_contains( x, &TermIR::Term( *index ) ) )
     }
 
-    pub fn full_contains ( &self, index: usize ) -> ( bool, bool ) {
+    pub fn full_contains ( &self, index: &usize ) -> ( bool, bool ) {
         ( self.top_contains( index ), self.internal_contains( index ) )
     }
 
@@ -239,15 +223,15 @@ impl TermTable<'_> {
     pub fn rewrite( &mut self ) -> bool {
 
         for index_pair in self.rule_indices.clone().iter() {
-            let (top, internal) = self.full_contains( index_pair.0 );
+            let (top, internal) = self.full_contains( &index_pair.0 );
             let any = top | internal;
             if any {
-                let rule = &(self.terms.deep_get_index( index_pair.0),self.terms.deep_get_index( index_pair.1));
+                let rule = &(self.terms.deep_get_index( &index_pair.0), self.terms.deep_get_index( &index_pair.1));
                 if internal {
                     let targets = self.term_indices
                         .clone()
                         .iter()
-                        .filter( |x| self.sub_contains( **x, TermIR::Term(index_pair.0)))
+                        .filter( |x| self.sub_contains( *x, &TermIR::Term(index_pair.0)))
                         .map( |x| *x )
                         .collect::<HashSet<usize>>();
 
@@ -260,7 +244,7 @@ impl TermTable<'_> {
                     let trees = targets
                         .iter()
                         .map( |x| self.terms
-                            .deep_get_index( *x )
+                            .deep_get_index( x )
                             .replace( rule ) )
                         .collect::<Vec<_>>();
                     for tree in trees {
@@ -282,16 +266,16 @@ impl TermTable<'_> {
         false
     }
 
-    fn translate( &self, tree: TreeIR ) -> OutputTree<'_> {
+    fn translate( &self, tree: &TreeIR ) -> OutputTree<'_> {
 
         let mut translation = Vec::new();
 
         match tree {
             TreeIR::Leaf(name_index) => {
-                return OutputTree::Leaf(self.names[name_index])
+                return OutputTree::Leaf(self.names[*name_index])
             }
             TreeIR::Tree(sub_tree) => {
-                for sub_sub_tree in sub_tree.into_iter() {
+                for sub_sub_tree in sub_tree.iter() {
                     translation.push( self.translate( sub_sub_tree ) )
                 }
             }
@@ -299,15 +283,18 @@ impl TermTable<'_> {
         OutputTree::Tree(translation)
     }
 
-    fn get( &self, index: usize ) -> OutputTree<'_> {
+    fn get( &self, index: &usize ) -> OutputTree<'_> {
 
-        let tree = self.terms.deep_get_index(index);
+        let tree = &self.terms.deep_get_index(index);
 
         self.translate( tree )
     }
 
     pub fn display( &self ) -> Vec<OutputTree<'_>> {
-        self.term_indices.iter().map( |x| self.get(*x) ).collect::<Vec<_>>()
+        self.term_indices
+            .iter()
+            .map( |x| self.get(x) )
+            .collect::<Vec<_>>()
     }
 
 }
