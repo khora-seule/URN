@@ -32,12 +32,12 @@ impl TreeIR {
 }
 
 #[derive(Debug)]
-pub enum OutputTree<'a> {
-    Leaf(&'a str),
-    Tree(Vec<OutputTree<'a>>),
+pub enum OutputTree {
+    Leaf(Box<str>),
+    Tree(Vec<OutputTree>),
 }
 
-impl fmt::Display for OutputTree<'_> {
+impl fmt::Display for OutputTree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             OutputTree::Leaf(name) => {
@@ -59,15 +59,15 @@ struct TermSet(IndexSet<Box<[TermIR]>>);
 
 impl TermSet {
 
-    fn insert_raw( &mut self, names: &Box<[&str]>, parsed_term: &[Term] ) -> usize {
+    fn insert_raw( &mut self, names: &Box<[Box<str>]>, parsed_term: &[Term] ) -> usize {
 
         let mut new_term = Vec::new();
 
         for sub_term in parsed_term.into_iter() {
             match sub_term {
-                Term::Name(name) => new_term.push(TermIR::Name(names.iter().position(|x| x == name).unwrap() )),
-                Term::Sentence(ptr) => new_term.push(TermIR::Term(self.insert_raw( names, &*ptr ))),
-                Term::Bound => todo!(),
+                Term::Word(name) => new_term.push(TermIR::Name(names.iter().position(|x| x == name).unwrap() )),
+                Term::Sentence(ptr,_) => new_term.push(TermIR::Term(self.insert_raw( names, &*ptr ))),
+                _ => todo!(),
             }
         }
         self.insert(new_term.into_boxed_slice())
@@ -95,14 +95,14 @@ impl TermSet {
 
 
 #[derive(Debug)]
-pub struct TermTable<'a> {
-    names: Box<[&'a str]>,
+pub struct TermTable {
+    names: Box<[Box<str>]>,
     terms: TermSet,
     term_indices: HashSet<usize>,
     rule_indices: Box<[(usize,usize)]>
 }
-impl TermTable<'_> {
-    pub fn build_term_table<'a>( parsed_terms: Box<[Term<'a>]>, parsed_rules: Box<[Term<'a>]>, names:  Box<[&'a str]> ) -> TermTable<'a>  {
+impl TermTable {
+    pub fn build_term_table( parsed_terms: Box<[Term]>, parsed_rules: Box<[Term]>, names:  Box<[Box<str>]> ) -> TermTable  {
         
         let mut terms = TermSet(IndexSet::new());
         let mut term_indices = HashSet::new();
@@ -112,14 +112,14 @@ impl TermTable<'_> {
             let pre_index;
             let post_index;
             match &rule_pair[0] {
-                Term::Sentence(ptr) => {
+                Term::Sentence(ptr,_) => {
 
                     pre_index = terms.insert_raw(&names, &*ptr);
                 }
                 _ => todo!(),
             }
             match &rule_pair[1] {
-                Term::Sentence(ptr) => {
+                Term::Sentence(ptr,_) => {
                     post_index = terms.insert_raw(&names, &*ptr);
                 }
                 _ => todo!(),
@@ -130,7 +130,7 @@ impl TermTable<'_> {
         for term in parsed_terms.into_iter() {
             let index;
             match term {
-                Term::Sentence(ptr) => {
+                Term::Sentence(ptr,_) => {
                     index = terms.insert_raw(&names, &*ptr);
                 }
                 _ => todo!(),
@@ -266,7 +266,7 @@ impl TermTable<'_> {
         false
     }
 
-    fn translate( &self, tree: &TreeIR ) -> OutputTree<'_> {
+    fn translate( &self, tree: &TreeIR ) -> OutputTree {
 
         let mut translation = Vec::new();
 
@@ -283,14 +283,14 @@ impl TermTable<'_> {
         OutputTree::Tree(translation)
     }
 
-    fn get( &self, index: &usize ) -> OutputTree<'_> {
+    fn get( &self, index: &usize ) -> OutputTree {
 
         let tree = &self.terms.deep_get_index(index);
 
         self.translate( tree )
     }
 
-    pub fn display( &self ) -> Vec<OutputTree<'_>> {
+    pub fn display( &self ) -> Vec<OutputTree> {
         self.term_indices
             .iter()
             .map( |x| self.get(x) )

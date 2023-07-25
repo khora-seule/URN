@@ -1,80 +1,89 @@
 
-use std::collections::HashSet;
+use indexmap::IndexSet;
 
-enum Token<'a> {
-    Start,
-    Stop,
-    Word(&'a str),
+
+use crate::token::Token;
+
+lazy_static! {
+    static ref OPERATORS : IndexSet::<Token> = IndexSet::from([ 
+        Token::Tick, Token::Tilde, Token::Bang, Token::At, 
+        Token::Hash, Token::Dollar, Token::Percent, Token::Caret,
+        Token::Ampersand, Token::Asterisk, Token::Dash, Token::Underscore,
+        Token::Equal, Token::Plus, Token::BSlash, Token::Vertical, 
+        Token::Semicolon, Token::Colon, Token::Comma, Token::Left,
+        Token::Dot, Token::Right, Token::FSlash, Token::Query,
+    ]);
 }
 
 #[derive(PartialEq, Eq)]
-pub enum Term<'a> {
-    Bound,
-    Name(&'a str),
-    Sentence(Box<[Term<'a>]>),
+pub enum Term {
+    Bound(TermType),
+    Word(usize),
+    Oper(usize),
+    Sentence(Box<[Term]>,TermType),
 }
 
-pub fn parse_files<'a>( term_file: &'a String, rule_file: &'a String ) -> ( Box<[Term<'a>]>, Box<[Term<'a>]>, Box<[&'a str]> ) {
-    let (terms, term_names) = parse_terms( term_file );
-    let (rules, rule_names) = parse_terms( rule_file );
-    let names = term_names
-        .union(&rule_names)
-        .into_iter()
-        .map(|x| *x )
-        .collect::<Vec<_>>();
-    ( terms, rules, (names).into_boxed_slice() )
+#[derive(PartialEq, Eq)]
+enum TermType {
+    Paren,
+    Brace,
+    Bracket,
 }
 
-fn parse_terms( term_file: &String ) -> ( Box<[Term]>, HashSet<&str> ) {
-    let token_stream = lex_file( term_file );
-    let tokens = token_stream.into_iter();
+pub fn parse_terms( tokens: &mut Vec<Token> ) -> Box<[Term]> {
 
     let mut stack = Vec::new();
 
-    let mut names = HashSet::new();
-
     for token in tokens {
         match token {
-            Token::Start => stack.push(Term::Bound),
-            Token::Word(word) => {
-                stack.push(Term::Name(word));
-                names.insert(*word);
-            }
-            Token::Stop => {
-
-                let mut sentence : Vec<Term<'_>> = Vec::new();
+            Token::LeftParen => stack.push(Term::Bound(TermType::Paren)),
+            Token::LeftBrace => stack.push(Term::Bound(TermType::Brace)),
+            Token::LeftBracket => stack.push(Term::Bound(TermType::Bracket)),
+            Token::RightParen => {
+                let mut sentence = Vec::new();
                 loop {
                     match stack.pop() {
-                        Some(Term::Bound) => {
-                            stack.push(Term::Sentence(sentence.into_boxed_slice()));
+                        Some(Term::Bound(TermType::Paren)) => {
+                            stack.push(Term::Sentence(sentence.into_boxed_slice(),TermType::Paren));
                             break
                         }
-                        Some(x) => sentence.push(x),
-                        None => break
+                        Some(other) => sentence.push(other),
+                        None => break,
                     }
-                }                
+                }
             }
+            Token::RightBrace => {
+                let mut sentence = Vec::new();
+                loop {
+                    match stack.pop() {
+                        Some(Term::Bound(TermType::Brace)) => {
+                            stack.push(Term::Sentence(sentence.into_boxed_slice(),TermType::Brace));
+                            break
+                        }
+                        Some(other) => sentence.push(other),
+                        None => break,
+                    }
+                }
+            },
+            Token::RightBracket => {
+                let mut sentence = Vec::new();
+                loop {
+                    match stack.pop() {
+                        Some(Term::Bound(TermType::Bracket)) => {
+                            stack.push(Term::Sentence(sentence.into_boxed_slice(),TermType::Bracket));
+                            break
+                        }
+                        Some(other) => sentence.push(other),
+                        None => break,
+                    }
+                }
+            },
+            
+            Token::Atom(id)     => stack.push(Term::Word(*id)),
+            Token::String(id)  => stack.push(Term::Word(*id)),
+            Token::Eof  => todo!(),
+            _ => todo!()
         }
     }
-
-    ( stack.into_boxed_slice(), names )
-}
-
-fn lex_file( file: &String ) -> Box<[Token]> {
-    file.as_str()
-        .split_whitespace()
-        .map_while(|x| Some(lex(x)) )
-        .into_iter()
-        .collect::<Vec<_>>()
-        .into_boxed_slice()
-}
-
-fn lex( token: &str ) -> Token {
-
-    match token {
-        "{" => Token::Start,
-        "}" => Token::Stop,
-        _ => Token::Word( token ),
-    }
-
+    stack.into_boxed_slice()
 }

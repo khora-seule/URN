@@ -1,83 +1,39 @@
-use std::collections::HashSet;
-use std::env;
-use std::fs::read_to_string;
+#[macro_use]
+extern crate lazy_static;
+
+use std::{ collections::HashSet, env };
+mod runtime;
+mod error;
+mod token;
+mod lexer;
 mod parser;
-mod solver;
-use crate::parser::parse_files;
-use crate::solver::{ TermTable };
+// mod solver;
+use crate::runtime::{ run_file, run_repl };
 
 fn main() {
 
     let args: Vec<String> = env::args().collect();
 
-    let terms_path = &args[1];
-    let rules_path = &args[2];
-    let terms_file = read_to_string( terms_path ).unwrap();
-    let rules_file = read_to_string( rules_path ).unwrap();
+    if args.len() >= 2 {
+        // Check first argument for `.aux` file extension
+        // If found, run said file with any flags
+        if args[1].contains(".urn") & args[2].contains(".urn") {
 
-    let (parsed_terms,parsed_rules,names) = parse_files(&terms_file,&rules_file);
-
-    let mut term_table = TermTable::build_term_table(parsed_terms,parsed_rules,names);
-
-    let flags = &args[2..].iter().collect::<HashSet<_>>();
-
-    let verbose = flags.contains(&String::from("-v"));
-
-    let spacious = flags.contains(&String::from("-s"));
-
-    let raw = flags.contains(&String::from("-r"));
-
-    if raw {
-        for term in term_table.display().iter() {
-            println!("{}",term);
+            let flags = args[3..].iter().collect::<HashSet<_>>();
+ 
+            run_file(&args[1], &args[2], Some(flags));
         }
-        while term_table.rewrite() {
-            for term in term_table.display().iter() {
-                println!("{}",term);
-            }
+        // If not found, then we launch the prompt with flags
+        else {
+
+            let flags = args[1..].iter().collect::<HashSet<_>>();
+
+            run_repl(Some(flags));
         }
     }
     else {
-
-        if verbose {
-            println!("Initial Term(s):");
-        }
-
-        let display = term_table.display();
-
-        if display.len() == 1 {
-            println!("|~|{}", display.iter().next().unwrap());
-        }
-        else {
-            for (index, term) in display.iter().enumerate() {
-                println!("|{}|\t{}",index+1,term);
-            }
-        }
-        
-        if spacious {
-            println!("|~|");
-        }
-
-        let mut steps = 1;
-
-        while term_table.rewrite() {
-            let display = term_table.display();
-            if verbose {
-                println!("|~| Number of Rewrites: {}\n|~|\n|~| Current Term(s)", steps);
-                steps += 1;
-            }
-            if display.len() == 1 {
-                println!("|~| {}", display.iter().next().unwrap());
-            }
-            else {
-                for (index, term) in display.iter().enumerate() {
-                    println!("|{}\t{}",index+1,term);
-                }
-            }
-            if spacious {
-                println!("|~|");
-            }    
-        }
+        run_repl(None);
     }
+
 
 }
