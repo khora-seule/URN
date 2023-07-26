@@ -4,27 +4,15 @@ use indexmap::IndexSet;
 
 use crate::token::Token;
 
-lazy_static! {
-    static ref OPERATORS : IndexSet::<Token> = IndexSet::from([ 
-        Token::Tick, Token::Tilde, Token::Bang, Token::At, 
-        Token::Hash, Token::Dollar, Token::Percent, Token::Caret,
-        Token::Ampersand, Token::Asterisk, Token::Dash, Token::Underscore,
-        Token::Equal, Token::Plus, Token::BSlash, Token::Vertical, 
-        Token::Semicolon, Token::Colon, Token::Comma, Token::Left,
-        Token::Dot, Token::Right, Token::FSlash, Token::Query,
-    ]);
-}
-
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Term {
     Bound(TermType),
     Word(usize),
-    Oper(usize),
     Sentence(Box<[Term]>,TermType),
 }
 
-#[derive(PartialEq, Eq)]
-enum TermType {
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+pub enum TermType {
     Paren,
     Brace,
     Bracket,
@@ -78,10 +66,10 @@ pub fn parse_terms( tokens: &mut Vec<Token> ) -> Box<[Term]> {
                     }
                 }
             },
-            
             Token::Atom(id)     => stack.push(Term::Word(*id)),
-            Token::String(id)  => stack.push(Term::Word(*id)),
-            Token::Eof  => todo!(),
+            Token::String(id)   => stack.push(Term::Word(*id)),
+            Token::Operator(id) => stack.push(Term::Word(*id)),
+            Token::Eof  => (),
             _ => todo!()
         }
     }

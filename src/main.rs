@@ -7,16 +7,16 @@ mod error;
 mod token;
 mod lexer;
 mod parser;
-// mod solver;
+mod solver;
 use crate::runtime::{ run_file, run_repl };
 
 fn main() {
 
     let args: Vec<String> = env::args().collect();
 
-    if args.len() >= 2 {
-        // Check first argument for `.aux` file extension
-        // If found, run said file with any flags
+    if args.len() >= 3 {
+        // Check first 2 arguments for `.urn` file extension
+        // If found, run said files with any flags
         if args[1].contains(".urn") & args[2].contains(".urn") {
 
             let flags = args[3..].iter().collect::<HashSet<_>>();

@@ -1,5 +1,7 @@
 //#![allow(unused)]
 
+use std::collections::HashSet;
+
 #[derive(Debug, Eq, PartialEq, Hash )]
 pub enum Token {
 
@@ -12,31 +14,7 @@ pub enum Token {
     RightBracket,   // ]
 
     // Operator Tokens
-    Tick,       // `
-    Tilde,      // ~
-    Bang,       // !
-    At,         // @
-    Hash,       // #
-    Dollar,     // $
-    Percent,    // %
-    Caret,      // ^
-    Ampersand,  // &
-    Asterisk,   // *
-    Dash,       // -
-    Underscore, // _
-    Equal,      // =
-    Plus,       // +
-    BSlash,     // \
-    Vertical,   // |
-    Semicolon,  // ;
-    Colon,      // :
-    Comma,      // ,
-    Left,       // <
-    Dot,        // .
-    Right,      // >
-    FSlash,     // /
-    Query,      // ?
-
+    Operator(usize),
     Atom(usize),
     String(usize),
 
@@ -45,4 +23,29 @@ pub enum Token {
 
     Valid,
     Uc(char),
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy )]
+pub enum TokenType {
+    Atom,
+    Operator,
+    String1,
+    String2,
+}
+
+lazy_static! {
+    pub static ref RESERVED : HashSet::<char> = HashSet::from([     
+    '(', ')', '{','}','[', ']', '`', '~', '!', '@', '#', '$', '%', 
+    '^', '&', '*', '-', '_', '=', '+', '\\', '|', ';', ':', ',', 
+    '<', '.', '>', '/', '?', '\'', '\"',
+    ]);
+}
+
+
+lazy_static! {
+    pub static ref OPERATORS : HashSet::<char> = HashSet::from([     
+    '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '-', 
+    '_', '=', '+', '\\', '|', ';', ':', ',', '<', '.', 
+    '>', '/', '?',
+    ]);
 }

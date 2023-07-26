@@ -1,20 +1,9 @@
 
 use indexmap::IndexSet;
 use crate::{
-    token::Token,
+    token::{ Token, TokenType, RESERVED, OPERATORS },
     error::{ Position, Error, LexError },
 };
-
-use std::collections::{ HashSet };
-
-lazy_static! {
-    static ref RESERVED_CHARACTERS : HashSet::<char> = HashSet::from([     
-    '(', ')', '{','}','[', ']', '`', '~', '!', '@', '#', '$', '%', 
-    '^', '&', '*', '-', '_', '=', '+', '\\', '|', ';', ':', ',', 
-    '<', '.', '>', '/', '?',
-    ]);
-}
-
 
 macro_rules! cinc {
     ( $column:expr ) => {
@@ -62,7 +51,7 @@ macro_rules! build_lex_error {
     }
 }
 
-pub fn lex_file( file: &mut String, names: &mut IndexSet<Box<str>> ) -> ( Vec<Token>, Option<Vec<Error>> ) {
+pub fn lex_file( file: &mut String, names: &mut IndexSet<(Box<str>,TokenType)> ) -> ( Vec<Token>, Option<Vec<Error>> ) {
 
     // Source Position
     let mut line : usize = 1;
@@ -87,7 +76,7 @@ pub fn lex_file( file: &mut String, names: &mut IndexSet<Box<str>> ) -> ( Vec<To
     }
 }
 
-pub fn scan_token( stream: &mut String, names: &mut IndexSet<Box<str>>, line: &mut usize, column: &mut usize ) -> Result<Option<Token>,Error> {
+pub fn scan_token( stream: &mut String, names: &mut IndexSet<(Box<str>,TokenType)>, line: &mut usize, column: &mut usize ) -> Result<Option<Token>,Error> {
 
     let Some(c) = stream.pop() else { return Ok(Some(Token::Eof)) };
 
@@ -98,30 +87,26 @@ pub fn scan_token( stream: &mut String, names: &mut IndexSet<Box<str>>, line: &m
         '}'     => { cinc!(column); Ok(Some(Token::RightBrace)) },
         '['     => { cinc!(column); Ok(Some(Token::LeftBracket)) },
         ']'     => { cinc!(column); Ok(Some(Token::RightBracket)) },
-        '`'     => { cinc!(column); Ok(Some(Token::Tick)) },
-        '~'     => { cinc!(column); Ok(Some(Token::Tilde)) },
-        '!'     => { cinc!(column); Ok(Some(Token::Bang)) },
-        '@'     => { cinc!(column); Ok(Some(Token::At)) },
-        '#'     => { cinc!(column); Ok(Some(Token::Hash)) },
-        '$'     => { cinc!(column); Ok(Some(Token::Dollar)) },
-        '%'     => { cinc!(column); Ok(Some(Token::Percent)) },
-        '^'     => { cinc!(column); Ok(Some(Token::Caret)) },
-        '&'     => { cinc!(column); Ok(Some(Token::Ampersand)) },
-        '*'     => { cinc!(column); Ok(Some(Token::Asterisk)) },
-        '-'     => { cinc!(column); Ok(Some(Token::Dash)) },
-        '_'     => { cinc!(column); Ok(Some(Token::Underscore)) },
-        '='     => { cinc!(column); Ok(Some(Token::Equal)) },
-        '+'     => { cinc!(column); Ok(Some(Token::Plus)) },
-        '\\'    => { cinc!(column); Ok(Some(Token::BSlash)) },
-        '|'     => { cinc!(column); Ok(Some(Token::Vertical)) },
-        ';'     => { cinc!(column); Ok(Some(Token::Semicolon)) },
-        ':'     => { cinc!(column); Ok(Some(Token::Colon)) },
-        ','     => { cinc!(column); Ok(Some(Token::Comma)) },
-        '<'     => { cinc!(column); Ok(Some(Token::Left)) },
-        '.'     => { cinc!(column); Ok(Some(Token::Dot)) },
-        '>'     => { cinc!(column); Ok(Some(Token::Right)) },
-        '/'     => { cinc!(column); Ok(Some(Token::FSlash)) },
-        '?'     => { cinc!(column); Ok(Some(Token::FSlash)) },
+        op if OPERATORS.contains(&op) => {
+            let mut literal = String::new();
+            literal.push(op);
+            let mut failed = false;
+            loop {
+                match stream.pop() {
+                    Some(mop) if OPERATORS.contains(&mop)     =>  {
+                        cinc!(column);
+                        literal.push(mop);
+                    },
+                    Some(b) => {
+                        stream.push(b);
+                        break;
+                    }
+                    None    =>  break,
+                }
+            }
+            let ( index, _ ) = names.insert_full((literal.into_boxed_str(),TokenType::Operator));
+            Ok(Some(Token::Operator(index)))
+        }
         '\'' => {
             let mut literal = String::new();
             let mut failed = false;
@@ -142,7 +127,7 @@ pub fn scan_token( stream: &mut String, names: &mut IndexSet<Box<str>>, line: &m
                 }
             }
             if !failed {
-                let ( index, _ ) = names.insert_full(literal.into_boxed_str());
+                let ( index, _ ) = names.insert_full((literal.into_boxed_str(),TokenType::String1));
                 Ok(Some(Token::String(index)))
             }
             else {
@@ -169,16 +154,12 @@ pub fn scan_token( stream: &mut String, names: &mut IndexSet<Box<str>>, line: &m
                 }
             }
             if !failed {
-                let ( index, _ ) = names.insert_full(literal.into_boxed_str());
+                let ( index, _ ) = names.insert_full((literal.into_boxed_str(),TokenType::String2));
                 Ok(Some(Token::String(index)))
             }
             else {
                 Err( build_lex_error!( *line, *column, Token::String(usize::MAX), Token::Eof ) )
             }
-        }
-        w if w.is_whitespace() => {
-            process_ws!(stream, w, line, column);
-            Ok(None)
         }
         a if a.is_ascii_alphabetic() => {
             cinc!(column);            
@@ -191,7 +172,7 @@ pub fn scan_token( stream: &mut String, names: &mut IndexSet<Box<str>>, line: &m
                         break;
                     },
                     Some(b)  => {
-                        if !(RESERVED_CHARACTERS.contains(&b)) {
+                        if !(RESERVED.contains(&b)) {
                             cinc!(column);
                             literal.push(b);
                         }
@@ -203,8 +184,12 @@ pub fn scan_token( stream: &mut String, names: &mut IndexSet<Box<str>>, line: &m
                     None => break,
                 }
             }
-            let ( index, _ ) = names.insert_full(literal.into_boxed_str());
+            let ( index, _ ) = names.insert_full((literal.into_boxed_str(),TokenType::Atom));
             Ok(Some(Token::Atom(index)))
+        }
+        w if w.is_whitespace() => {
+            process_ws!(stream, w, line, column);
+            Ok(None)
         }
         uc => {
             cinc!(column);

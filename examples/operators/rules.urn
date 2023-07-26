@@ -1,0 +1,20 @@
+{ x++ } { inc x }
+
+{ x-- } { dec x }
+
+{ x + y } { add x y }
+{ y + x } { x + y }
+
+{ x - y } { sub x y }
+{ y - x } { sub y x }
+
+{ x * y } { mul x y }
+{ y * x } { x * y }
+
+{ x / y } { div x y }
+{ y / x } { div y x }
+
+{ x += y } { x = { x + y } }
+{ x -= y } { x = { x - y } }
+{ x *= y } { x = { x * y } }
+{ x /= y } { x = { x / y } }
