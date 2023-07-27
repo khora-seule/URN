@@ -48,10 +48,13 @@ cargo build
 
 ---
 
+## Primitives
+There are `Atoms`, `Strings`, and `Operators` ( which are basically just non-alphanumeric `Atoms` ) primitives that are recognized in both `Terms` and `Rules`. `Strings` are delimited with either single-quotes, `'...'`, or double quotes `"..."`
+
 ## Terms & Rules
-There are two constructs in URN: `Terms` and `Rules`. 
-- `Terms` are either strings delimited by whitespace or are delimited by brackets -- `{` or `}` -- and have `Terms` nested inside them. All the `Terms` for a given ARS are contained in one `Terms` file. 
-- `Rules` are pairs of `Terms` and represent an opportunity for the first `Term` to be rewritten as the second `Term`. All `Rules` for a given ARS are contained in one `Rules` file; they are paired implicitly with no additional notation -- this means you must take care to make sure your `Rules` file is valid ( has an even number of `terms` ) or you will encounter an error.
+The two constructs in URN are said `Terms` and `Rules`. 
+- `Terms` are delimited by either parenthesis `(...)`, brackets `[...]`, or braces `{...}`, and can have `Terms` or primitives nested inside them. All the `Terms` for a given ARS are contained in one `Terms` file. 
+- `Rules` are pairs of `Terms` and represent an opportunity for the first `Term` to be rewritten as the second `Term`. All `Rules` for a given ARS are contained in one `Rules` file; they are paired implicitly with no additional notation -- this means you must take care to make sure your `Rules` file is valid ( i.e. has an even number of `terms` ) or you will encounter an error.
 
 ---
 
@@ -66,7 +69,6 @@ There are two constructs in URN: `Terms` and `Rules`.
 
 ---
 
-## Important Note About Release 0.1
-As of the initial release, URN only works in an obvious way for `term` files containing only one `term`. This is because scope is purely structural in URN, so all "top-level" `terms` behave according to extrinsic equality -- including during rewriting. Since only one Rewrite step is occuring at a time, and scope is only structural, if one top-level `term` is rewritten to be identical to another current top-level `term`, then URN proceeds to ignore the multiplicity, since the rewrite will be identical for both `terms`.
+## Important Note
+As of the initial few releases, URN only works in an obvious way for `term` files containing only one `term`. This is because scope is purely structural in URN, so all "top-level" `terms` behave according to extrinsic equality -- including during rewriting. Since only one Rewrite step is occuring at a time, and scope is only structural, if one top-level `term` is rewritten to be identical to another current top-level `term`, then URN proceeds to ignore the multiplicity, since the rewrite will be identical for both `terms`.
 This means that -- at the moment -- in order to have URN behave as expected, it will need to be the case that all of the rewrite paths of each `term` in a `term` file are disjoint i.e. none of the rewrite paths have any intermediate `terms` in common.
-This limitation isn't ideal for several reasons, and the implementation -- and likely specification -- of the language will change to enable multiple `terms` in future versions. Likely the following 'major' version will support this.
